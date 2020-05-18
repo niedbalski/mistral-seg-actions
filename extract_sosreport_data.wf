@@ -1,0 +1,34 @@
+---
+version: '2.0'
+
+extract_sosreport_data:
+  input:
+    - sosreports
+
+  output:
+    report: <% $.report %>
+
+  tasks:
+    uncompress:
+      with-items: sosreport in <% $.sosreports %>
+      action: seg.uncompress_sosreport filepath=<% $.sosreport %>
+      on-success:
+        publish:
+          branch:
+            sosreport_filepath: <% task().result %>
+        next: xsos
+        
+    xsos:
+      with-items: filepath in <% $.sosreport_filepath %>
+      action: seg.xsos filepath=<% $.filepath %>
+      on-success:
+        publish:
+          branch:
+            xsos_filepath: <% task().result %>
+        next: pastebinit
+
+    pastebinit:
+      with-items: filepath in <% $.xsos_filepath %>
+      action: seg.pastebinit filepath=<% $.filepath %>
+      publish:
+        report: <% task().result %>
